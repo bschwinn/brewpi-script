@@ -23,3 +23,8 @@
 # socketPort=6332
 # socketHost=127.0.0.1
 
+# logtoinfluxdb = false
+# influxdb_baseurl = http://localhost:8086
+# influxdb_dbname = brewpi
+# influxdb_user = brewpi
+# influxdb_password = brewpi

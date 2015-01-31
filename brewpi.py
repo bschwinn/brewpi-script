@@ -58,6 +58,7 @@ import brewpiVersion
 import pinList
 import expandLogMessage
 import BrewPiProcess
+import BrewPiInflux
 
 
 # Settings will be read from Arduino, initialize with same defaults as Arduino
@@ -175,14 +176,14 @@ if checkDontRunFile:
         exit(0)
 
 # check for other running instances of BrewPi that will cause conflicts with this instance
-allProcesses = BrewPiProcess.BrewPiProcesses()
-allProcesses.update()
-myProcess = allProcesses.me()
-if allProcesses.findConflicts(myProcess):
-    if not checkDontRunFile:
-        logMessage("Another instance of BrewPi is already running, which will conflict with this instance. " +
-                   "This instance will exit")
-    exit(0)
+# allProcesses = BrewPiProcess.BrewPiProcesses()
+# allProcesses.update()
+# myProcess = allProcesses.me()
+# if allProcesses.findConflicts(myProcess):
+#     if not checkDontRunFile:
+#         logMessage("Another instance of BrewPi is already running, which will conflict with this instance. " +
+#                    "This instance will exit")
+#     exit(0)
 
 if checkStartupOnly:
     exit(1)
@@ -201,6 +202,8 @@ if logToFiles:
     sys.stderr = open(logPath + 'stderr.txt', 'a', 0)  # append to stderr file, unbuffered
     sys.stdout = open(logPath + 'stdout.txt', 'w', 0)  # overwrite stdout file on script start, unbuffered
 
+if config['logtoinfluxdb'] == 'true':
+    influxLogger = BrewPiInflux.BrewPiInfluxLogger(config['influxdb_baseurl'], config['influxdb_dbname'], config['influxdb_user'], config['influxdb_password'])
 
 # userSettings.json is a copy of some of the settings that are needed by the web server.
 # This allows the web server to load properly, even when the script is not running.
@@ -705,6 +708,9 @@ while run:
                     newRow = prevTempJson
                     # add to JSON file
                     brewpiJson.addRow(localJsonFileName, newRow)
+                    # add to InfluxDB if config'ed
+                    if config['logtoinfluxdb'] == 'true':
+                        influxLogger.addToSeries(newRow)
                     # copy to www dir.
                     # Do not write directly to www dir to prevent blocking www file.
                     shutil.copyfile(localJsonFileName, wwwJsonFileName)
